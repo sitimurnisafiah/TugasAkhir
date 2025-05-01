@@ -451,42 +451,50 @@ if selected == "Evaluasi":
 
                 else:
                     st.warning("Jumlah cluster terlalu sedikit untuk menghitung Davies-Bouldin Index.")
-
         else:
             st.warning("Data tidak memiliki kolom 'Cluster' atau kosong.")
     else:
         st.warning("Data clustering belum tersedia di sesi Streamlit.")
 
-if selected == "Analisa Hasil":
+elif selected == "Analisa Hasil":
     st.title("Analisa Hasil")
 
-    if "clustered_data" in st.session_state:
-        df_clustered = st.session_state["clustered_data"].copy()
+    # Periksa apakah data hasil clustering tersedia
+    if "clustered_data" not in st.session_state:
+        st.warning("\u26A0 Data hasil clustering tidak ditemukan. Silakan jalankan proses clustering terlebih dahulu.")
+        st.stop()
 
-        if "Cluster" in df_clustered.columns and not df_clustered.empty:
-            X = df_clustered.drop(columns=["Cluster"])
-            labels = df_clustered["Cluster"]
+    df_clustered = st.session_state["clustered_data"].copy()
 
-            # ============================
-            # Analisis Rata-Rata Karakteristik UMKM per Cluster
-            # ============================
-            st.subheader("Rata-Rata Karakteristik UMKM per Cluster")
+    if "Cluster" not in df_clustered.columns or df_clustered.empty:
+        st.warning("\u26A0 Data tidak memiliki kolom 'Cluster' atau data kosong.")
+        st.stop()
 
-            if "encoded_data" in st.session_state:
-                df_transformed = st.session_state["encoded_data"].copy()
-
-                df_result_full = df_transformed.copy()
-                df_result_full["Cluster"] = df_clustered["Cluster"].values
-
-                numeric_columns_asli = df_transformed.select_dtypes(include=["int64", "float64"]).columns.tolist()
-                cluster_means = df_result_full.groupby("Cluster")[numeric_columns_asli].mean()
-
-                cluster_means_formatted = cluster_means.round(0).astype(int).applymap(lambda x: f"{x:,}".replace(",", "."))
-
-                st.dataframe(cluster_means_formatted)
-            else:
-                st.warning("\u26A0 Data transformasi belum ditemukan. Silakan lakukan preprocessing terlebih dahulu.")
-        else:
-            st.warning("\u26A0 Model KMeans belum ditemukan. Silakan jalankan proses clustering terlebih dahulu.")
+    # Gunakan data transformasi jika tersedia, jika tidak gunakan data asli
+    if "encoded_data" in st.session_state:
+        df_transformed = st.session_state["encoded_data"].copy()
+    elif "uploaded_data" in st.session_state:
+        df_transformed = st.session_state["uploaded_data"].copy()
     else:
-        st.warning("\u26A0 Data clustering tidak lengkap atau belum tersedia.")
+        st.warning("\u26A0 Data transformasi maupun data asli tidak ditemukan. Silakan unggah atau proses data terlebih dahulu.")
+        st.stop()
+
+    # Gabungkan hasil clustering dengan data asli/transformasi
+    if len(df_transformed) != len(df_clustered):
+        st.warning("\u26A0Panjang data transformasi dan hasil clustering tidak sama. Tidak dapat melakukan analisa.")
+        st.stop()
+
+    df_result_full = df_transformed.copy()
+    df_result_full["Cluster"] = df_clustered["Cluster"].values
+
+    # Hitung rata-rata per cluster untuk fitur numerik
+    st.subheader("Rata-Rata Karakteristik UMKM per Cluster")
+
+    numeric_columns = df_result_full.select_dtypes(include=["int64", "float64"]).columns.tolist()
+    if "Cluster" in numeric_columns:
+        numeric_columns.remove("Cluster")
+
+    cluster_means = df_result_full.groupby("Cluster")[numeric_columns].mean()
+    cluster_means_formatted = cluster_means.round(0).astype(int).applymap(lambda x: f"{x:,}".replace(",", "."))
+
+    st.dataframe(cluster_means_formatted)
