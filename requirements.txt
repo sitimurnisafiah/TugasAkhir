@@ -1,4 +1,4 @@
-numpy==1.20.1
+numpy>=1.24
 streamlit
 seaborn==0.11.1
 matplotlib==3.4.1
