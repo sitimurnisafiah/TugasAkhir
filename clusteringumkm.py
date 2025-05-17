@@ -295,56 +295,6 @@ elif selected == "Hasil Clustering":
             ax.set_ylabel("Jumlah UMKM")
             ax.set_title("Jumlah UMKM pada Setiap Cluster")
             st.pyplot(fig)
-        
-        # ============================
-        # Scatter Plot 3D Hasil Clustering dengan PCA
-        # ============================
-        
-        st.subheader("Scatter Plot 3D Hasil Clustering dengan PCA")
-
-        # Pilih hanya kolom numerik
-        numeric_cols = df_clustered.select_dtypes(include=["int64", "float64"]).columns.tolist()
-
-        if len(numeric_cols) < 3:
-            st.warning("\u26A0 Tidak cukup kolom numerik untuk membuat scatter plot 3D.")
-        else:
-            scaler = RobustScaler()
-            df_clustered_scaled = df_clustered.copy()
-            df_clustered_scaled[numeric_cols] = scaler.fit_transform(df_clustered[numeric_cols])
-            # Reduksi dimensi ke 3 menggunakan PCA
-            pca = PCA(n_components=3)
-            pca_result = pca.fit_transform(df_clustered[numeric_cols])
-
-            # Simpan hasil PCA dalam DataFrame
-            df_pca = pd.DataFrame(pca_result, columns=["PC1", "PC2", "PC3"])
-            df_pca["Cluster"] = df_clustered["Cluster"]
-
-            # Buat scatter plot 3D
-            fig = plt.figure(figsize=(6, 3))
-            ax = fig.add_subplot(111, projection="3d")
-
-            # Plot setiap cluster dengan warna berbeda
-            unique_clusters = np.unique(df_pca["Cluster"])
-            cmap = plt.get_cmap("viridis", len(unique_clusters))
-
-            for i, cluster in enumerate(unique_clusters):
-                cluster_data = df_pca[df_pca["Cluster"] == cluster]
-                ax.scatter(
-                    cluster_data["PC1"], cluster_data["PC2"], cluster_data["PC3"],
-                    color=cmap(i), label=f"Cluster {cluster}", s=30, alpha=0.8, edgecolors="k"
-                )
-
-            # Tambahkan label dan title
-            ax.set_xlabel("PC1", fontsize=12)
-            ax.set_ylabel("PC2", fontsize=12)
-            ax.set_zlabel("PC3", fontsize=12)
-            ax.set_title("3D Scatter Plot Hasil Clustering dengan PCA", fontsize=8)
-
-            # Tambahkan legend
-            ax.legend(title="Clusters")
-
-            # Tampilkan plot di Streamlit
-            st.pyplot(fig)
     else:
         st.warning("\u26A0 Belum ada hasil clustering yang tersedia. Silakan lakukan pemodelan K-Means terlebih dahulu.")
 
